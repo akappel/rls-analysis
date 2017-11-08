@@ -149,6 +149,41 @@ impl fmt::Display for Target {
 mod tests {
     use std::path::Path;
     use super::*;
+    use std::panic;
+    use std::env;
+
+    #[test]
+    fn it_should_find_rustc_via_path() {
+        // ensure that the env. vars aren't set (restore later if they are)
+        let key_sysroot = "SYSROOT";
+        let env_sysroot = match env::var_os(&key_sysroot) {
+            Some(val) => {
+                env::remove_var(&key_sysroot);
+                val.to_str().unwrap().to_owned()
+            },
+            None => {String::new()}
+        };
+
+        let key_rustc = "RUSTC";
+        let env_rustc = match env::var_os(&key_rustc) {
+            Some(val) => {
+                env::remove_var(&key_rustc);
+                val.to_str().unwrap().to_owned()
+            },
+            None => {String::new()}
+        };
+
+        // run test
+        let result = panic::catch_unwind(|| {
+            sys_root_path();            
+        });
+
+        // restore env vars if they were set (in case other tests rely on them)
+        env::set_var(key_sysroot, env_sysroot);
+        env::set_var(key_rustc, env_rustc);
+
+        assert!(result.is_ok(), "sys_root_path() did not find rustc when it should");
+    }
 
     #[test]
     fn windows_path() {
